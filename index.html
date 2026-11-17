@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="DermSage 皮肤健康助手，提供本机图文观察、有限病种的鉴别参考和本地记录。">
+    <title>DermSage皮肤健康助手软件 V1.0</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="wordmark" href="#" aria-label="DermSage 首页">Derm<span>Sage</span></a>
+            <nav class="site-nav" aria-label="主要导航">
+                <a href="#workspace">记录工作区</a>
+                <a href="#records">本地记录</a>
+                <a href="#topics">主题索引</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero" aria-labelledby="product-title">
+            <div class="container hero-inner">
+                <div class="hero-copy">
+                    <p class="version">V1.0</p>
+                    <h1 id="product-title"><span>DermSage</span><span>皮肤健康助手软件</span></h1>
+                    <p class="hero-description">填写皮肤观察记录，查看本机模型的图文观察和鉴别参考，并管理本地记录。</p>
+                    <a class="button button-primary" href="#workspace">开始使用</a>
+                </div>
+                <div class="hero-logo">
+                    <img src="DermSage-logo.png" alt="DermSage 项目原标志" width="276" height="276">
+                </div>
+            </div>
+        </section>
+
+        <div class="container main-content">
+            <noscript><p class="notice">请在浏览器设置中启用 JavaScript，以使用鉴别参考、主题匹配和记录管理。</p></noscript>
+            <section id="workspace" class="section-block" aria-labelledby="workspace-title">
+                <div class="section-heading">
+                    <h2 id="workspace-title">记录工作区</h2>
+                    <p>填写记录标题，再添加症状描述或选择一张图片。</p>
+                </div>
+                <p class="notice">点击保存后，文字记录写入本机 SQLite 数据库。图片在本页预览，点击「查看鉴别参考」时才传给本机模型。</p>
+
+                <form id="case-form" class="panel case-form" novalidate>
+                    <h3 id="form-title">新建记录</h3>
+                    <div class="form-layout">
+                        <div class="entry-fields">
+                            <div class="field">
+                                <label for="case-title">记录标题 <span class="field-hint">必填</span></label>
+                                <input id="case-title" name="title" type="text" maxlength="80" required autocomplete="off" placeholder="例如：前臂皮肤观察">
+                            </div>
+                            <div class="field-row">
+                                <div class="field">
+                                    <label for="case-region">部位 <span class="field-hint">选填</span></label>
+                                    <input id="case-region" name="region" type="text" maxlength="60" autocomplete="off" placeholder="例如：前臂">
+                                </div>
+                                <div class="field">
+                                    <label for="case-days">持续天数 <span class="field-hint">选填</span></label>
+                                    <input id="case-days" name="days" type="number" min="0" max="3650" step="1" inputmode="numeric" placeholder="0–3650">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="case-description">症状描述 <span class="field-hint">选择图片后可留空</span></label>
+                                <textarea id="case-description" name="description" rows="4" maxlength="800" placeholder="例如：观察到一小片发红区域，持续三天。"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="image-field">
+                            <div class="field">
+                                <label for="case-image">图片 <span class="field-hint">选填</span></label>
+                                <input id="case-image" name="image" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" aria-describedby="image-restrictions image-meta">
+                                <p id="image-restrictions" class="field-hint">JPG、PNG 或 WebP，单张最大 8 MB。</p>
+                            </div>
+                            <div class="image-display">
+                                <img id="image-preview" alt="所选图片的本地预览" hidden>
+                                <p id="image-meta" class="field-hint" aria-live="polite">尚未选择图片。</p>
+                            </div>
+                            <button id="image-clear" type="button" class="button button-secondary" disabled>清除图片</button>
+                        </div>
+                    </div>
+                    <p id="form-status" class="status" role="status" aria-live="polite"></p>
+                    <div class="form-actions">
+                        <button id="run-analysis" type="submit" class="button button-primary">查看匹配结果</button>
+                        <button id="form-reset" type="button" class="button button-secondary">清空表单</button>
+                    </div>
+                </form>
+
+                <section id="analysis-result" class="panel result-panel" aria-labelledby="result-topic" hidden>
+                    <p class="result-label">预设主题</p>
+                    <h3 id="result-topic" tabindex="-1"></h3>
+                    <dl class="result-details">
+                        <div>
+                            <dt>匹配关键词</dt>
+                            <dd><p id="result-keys"></p></dd>
+                        </div>
+                        <div>
+                            <dt>规则选择依据</dt>
+                            <dd><p id="result-basis"></p></dd>
+                        </div>
+                        <div>
+                            <dt>图片信息</dt>
+                            <dd><p id="result-image"></p></dd>
+                        </div>
+                    </dl>
+                    <p class="field-hint">主题示例依据描述中的关键词匹配。图片内容不参与主题匹配。</p>
+                    <button id="save-record" type="button" class="button button-primary" disabled>保存记录</button>
+                    <p id="result-status" class="status" role="status" aria-live="polite"></p>
+                </section>
+
+                <section id="model-observation" class="panel model-panel" aria-labelledby="model-title">
+                    <h3 id="model-title">图文观察与鉴别参考</h3>
+                    <p class="model-explanation">提供图片或文字后，本机模型整理观察要点，并在有限的预设病种内列出候选及依据。</p>
+                    <p class="model-explanation">此功能为未经临床验证的研究原型。候选仅供专业人员进一步鉴别。模型处理本次图片、描述、部位及天数，结果仅在当前页面查看。</p>
+                    <p id="model-readiness" class="status" role="status" aria-live="polite">正在检查模型状态…</p>
+                    <div class="model-actions">
+                        <button id="run-model" type="button" class="button button-primary" disabled>查看鉴别参考</button>
+                        <button id="refresh-model-status" type="button" class="button button-secondary">检查模型状态</button>
+                    </div>
+                    <p id="model-status" class="status" role="status" aria-live="polite"></p>
+
+                    <div id="model-result" class="model-result" hidden>
+                        <h4 id="model-result-title" tabindex="-1">鉴别参考结果</h4>
+                        <dl class="model-metadata">
+                            <div>
+                                <dt>模型</dt>
+                                <dd id="model-result-name"></dd>
+                            </div>
+                            <div>
+                                <dt>输入方式</dt>
+                                <dd id="model-result-mode"></dd>
+                            </div>
+                            <div>
+                                <dt>图片质量</dt>
+                                <dd id="model-result-quality"></dd>
+                            </div>
+                        </dl>
+                        <section class="differential-result" aria-labelledby="differential-title">
+                            <h5 id="differential-title">候选病种</h5>
+                            <p id="model-differential-message" class="differential-message" hidden></p>
+                            <ul id="model-candidates" class="differential-list" hidden></ul>
+                        </section>
+                        <h5>观察要点</h5>
+                        <ul id="model-result-observations"></ul>
+                        <h5>可补充的信息</h5>
+                        <ul id="model-result-questions"></ul>
+                        <h5>摘要</h5>
+                        <p id="model-result-summary" class="model-summary"></p>
+                    </div>
+                </section>
+            </section>
+
+            <section id="records" class="section-block" aria-labelledby="records-title">
+                <div class="section-heading">
+                    <h2 id="records-title">本地记录</h2>
+                    <p>通过本机服务读取记录。可筛选、导出 JSON，或导入本软件导出的记录。</p>
+                </div>
+                <div class="panel records-panel">
+                    <div class="record-filters">
+                        <div class="field">
+                            <label for="history-search">搜索记录</label>
+                            <input id="history-search" type="search" placeholder="搜索标题、部位或描述">
+                        </div>
+                        <div class="field">
+                            <label for="history-topic">按主题筛选</label>
+                            <select id="history-topic">
+                                <option value="">全部主题</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="record-toolbar">
+                        <p id="history-count" class="field-hint" aria-live="polite">0 条记录</p>
+                        <div class="toolbar-actions">
+                            <button id="reload-records" type="button" class="button button-secondary">刷新记录</button>
+                            <button id="export-records" type="button" class="button button-secondary">导出 JSON</button>
+                            <button id="import-records" type="button" class="button button-secondary">导入 JSON</button>
+                            <input id="import-file" type="file" accept=".json,application/json" hidden aria-label="选择要导入的 JSON 文件">
+                            <button id="clear-records" type="button" class="button button-danger">清空记录</button>
+                        </div>
+                    </div>
+                    <p id="history-status" class="status" role="status" aria-live="polite"></p>
+                    <div id="history-list" class="history-list"></div>
+                </div>
+            </section>
+
+            <section id="topics" class="section-block" aria-labelledby="topics-title">
+                <div class="section-heading">
+                    <h2 id="topics-title">主题索引</h2>
+                    <p>查看各预设主题的示例关键词。没有命中时显示通用主题。</p>
+                </div>
+                <ul id="topic-list" class="topic-list"></ul>
+            </section>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">DermSage皮肤健康助手软件 V1.0</div>
+    </footer>
+</body>
+</html>

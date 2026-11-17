@@ -1,0 +1,27 @@
+# 本地运行数据和模型
+/data/
+/runtime/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+DermSage-records-*.json
+
+# Python 虚拟环境、缓存和本机配置
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.env.*
+*.log
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
